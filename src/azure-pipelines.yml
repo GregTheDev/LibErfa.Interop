@@ -1,0 +1,202 @@
+# ASP.NET
+# Build and test ASP.NET projects.
+# Add steps that publish symbols, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
+
+trigger:
+- main
+
+variables:
+- group: Default
+- name: solution
+  value: '**/*.sln'
+- name: buildPlatform
+  value: 'Any CPU'
+- name: buildConfiguration
+  value: 'Release'
+- name: dotnetSdkVersion
+  value: '8.x'
+
+stages:
+  
+- stage: 'BuildAndTest'
+  displayName: 'Build and test LibErfa.Interop'
+  jobs:
+  - job: 'BuildWindows'
+    displayName: 'Build Windows'
+    pool:
+      vmImage: 'windows-latest'
+
+    steps:
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build LibErfa.Interop'
+      inputs:
+        command: build
+        projects: './src/LibErfa.Interop/LibErfa.Interop.csproj'
+        platform: '$(buildPlatform)'
+        arguments: '--configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test'
+      inputs:
+        command: 'test'
+        projects: './src/LibErfa.Interop.Tests/LibErfa.Interop.Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
+        publishTestResults: true
+
+  - job: 'BuildLinux'
+    displayName: 'Build Linux'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build LibErfa.Interop'
+      inputs:
+        command: build
+        projects: './src/LibErfa.Interop/LibErfa.Interop.csproj'
+        platform: '$(buildPlatform)'
+        arguments: '--configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test'
+      inputs:
+        command: 'test'
+        projects: './src/LibErfa.Interop.Tests/LibErfa.Interop.Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
+        publishTestResults: true
+
+  - job: 'BuildMacOS'
+    displayName: 'Build MacOS'
+    pool:
+      vmImage: 'macOS-latest'
+
+    steps:
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build LibErfa.Interop'
+      inputs:
+        command: build
+        projects: './src/LibErfa.Interop/LibErfa.Interop.csproj'
+        platform: '$(buildPlatform)'
+        arguments: '--configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet test'
+      inputs:
+        command: 'test'
+        projects: './src/LibErfa.Interop.Tests/LibErfa.Interop.Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
+        publishTestResults: true
+
+- stage: 'PackAndPublish'
+  displayName: 'Pack and publish LibErfa.Interop'
+  dependsOn: BuildAndTest
+  jobs:
+  - job: 'PackAndTestLinux'
+    displayName: 'Pack and test Linux package'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+   
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet pack'
+      inputs:
+        command: pack
+        packagesToPack: './src/LibErfa.Interop/LibErfa.Interop.csproj'
+
+    - task: CopyFiles@2
+      displayName: 'Copy package to Sample app'
+      inputs:
+        SourceFolder: $(Build.ArtifactStagingDirectory)
+        TargetFolder: './sample/SampleNugetServer'
+        Contents: '*.nupkg'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Update LibErfa.Interop package'
+      inputs:
+        command: custom
+        custom: add
+        arguments: 'package LibErfa.Interop -s ../SampleNugetServer --prerelease'
+        workingDirectory: './sample/SampleConsoleApp'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Sample'
+      inputs:
+        command: run
+        projects: './sample/SampleConsoleApp/SampleConsoleApp.csproj'
+
+  - job: 'PackAndTestMacOS'
+    displayName: 'Pack and test MacOS package'
+    pool:
+      vmImage: 'macOS-latest'
+
+    steps:
+   
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet pack'
+      inputs:
+        command: pack
+        packagesToPack: './src/LibErfa.Interop/LibErfa.Interop.csproj'
+
+    - task: CopyFiles@2
+      displayName: 'Copy package to Sample app'
+      inputs:
+        SourceFolder: $(Build.ArtifactStagingDirectory)
+        TargetFolder: './sample/SampleNugetServer'
+        Contents: '*.nupkg'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Update LibErfa.Interop package'
+      inputs:
+        command: custom
+        custom: add
+        arguments: 'package LibErfa.Interop -s ../SampleNugetServer --prerelease'
+        workingDirectory: './sample/SampleConsoleApp'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Sample'
+      inputs:
+        command: run
+        projects: './sample/SampleConsoleApp/SampleConsoleApp.csproj'
+
+  - job: 'PackAndTestWindows'
+    displayName: 'Pack and test Windows package'
+    # Since this job will do the final pack and publish it only runs after the Linux + MacOS jobs are finished
+    dependsOn: 
+      - PackAndTestLinux
+      - PackAndTestMacOS
+    pool:
+      vmImage: 'windows-latest'
+
+    steps:
+   
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet pack'
+      inputs:
+        command: pack
+        packagesToPack: './src/LibErfa.Interop/LibErfa.Interop.csproj'
+
+    - task: CopyFiles@2
+      displayName: 'Copy package to Sample app'
+      inputs:
+        SourceFolder: $(Build.ArtifactStagingDirectory)
+        TargetFolder: './sample/SampleNugetServer'
+        Contents: '*.nupkg'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Update LibErfa.Interop package'
+      inputs:
+        command: custom
+        custom: add
+        arguments: 'package LibErfa.Interop -s ..\SampleNugetServer --prerelease'
+        workingDirectory: './sample/SampleConsoleApp'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Sample'
+      inputs:
+        command: run
+        projects: './sample/SampleConsoleApp/SampleConsoleApp.csproj'

@@ -1,0 +1,128 @@
+# ASP.NET
+# Build and test ASP.NET projects.
+# Add steps that publish symbols, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/aspnet/build-aspnet-4
+
+trigger:
+- none
+
+variables:
+- group: Default
+- name: solution
+  value: '**/*.sln'
+- name: buildPlatform
+  value: 'Any CPU'
+- name: buildConfiguration
+  value: 'Release'
+- name: dotnetSdkVersion
+  value: '8.x'
+
+stages:
+- stage: 'BuildLiberfa'
+  displayName: 'Build liberfa library'
+  jobs:
+  - job: 'BuildLinux'
+    displayName: 'Build Linux library'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+
+    - task: CmdLine@2
+      displayName: 'Get liberfa source'
+      inputs:
+        script: |
+          git clone https://github.com/liberfa/erfa.git
+          cd erfa
+          git checkout v2.0.1
+
+    - task: CmdLine@2
+      displayName: 'Install meson'
+      inputs:
+        script: pip3 install meson ninja
+
+    - task: CmdLine@2
+      displayName: 'Build liberfa'
+      inputs:
+        script: |
+          meson setup builddir/
+          ninja -C builddir/
+        workingDirectory: 'erfa'
+
+    - publish: '$(System.DefaultWorkingDirectory)/erfa/builddir/src/liberfa.so'
+      artifact: ubuntuLiberfa
+
+  - job: 'BuildWindows'
+    displayName: 'Build Windows Library'
+    pool:
+      vmImage: 'windows-latest'
+
+    steps:
+
+    - task: CmdLine@2
+      displayName: 'Get liberfa source'
+      inputs:
+        script: |
+          git clone https://github.com/liberfa/erfa.git
+          cd erfa
+          git checkout v2.0.1
+
+    - task: CmdLine@2
+      displayName: 'Install meson'
+      inputs:
+        script: pip3 install meson ninja
+
+    - task: CmdLine@2
+      displayName: 'Build liberfa'
+      inputs:
+        script: |
+          meson setup builddir/
+          ninja -C builddir/
+        workingDirectory: 'erfa'
+
+    - powershell: |
+        Write-Host "Show all folder content"
+        Get-ChildItem -Path $(System.DefaultWorkingDirectory)\erfa\builddir\src\*.*
+      displayName: 'Show folder contents'
+
+    - publish: '$(System.DefaultWorkingDirectory)\erfa\builddir\src\liberfa.dll.a'
+      artifact: windowsLiberfa
+
+    - publish: '$(System.DefaultWorkingDirectory)\erfa\builddir\src\liberfa-1.dll'
+      artifact: windowsLiberfa1
+
+  - job: 'BuildMac'
+    displayName: 'Build MacOS library'
+    pool:
+      vmImage: 'macOS-latest'
+
+    steps:
+
+    - task: CmdLine@2
+      displayName: 'Get liberfa source'
+      inputs:
+        script: |
+          git clone https://github.com/liberfa/erfa.git
+          cd erfa
+          git checkout v2.0.1
+
+    - task: CmdLine@2
+      displayName: 'Install meson'
+      inputs:
+        script: pip3 install meson ninja
+
+    - task: CmdLine@2
+      displayName: 'Build liberfa'
+      inputs:
+        script: |
+          meson setup builddir/
+          ninja -C builddir/
+        workingDirectory: 'erfa'
+
+    - powershell: |
+        Write-Host "Show all folder content"
+        Get-ChildItem -Path $(System.DefaultWorkingDirectory)\erfa\builddir\src\*.*
+      displayName: 'Show folder contents'
+
+    - publish: '$(System.DefaultWorkingDirectory)/erfa/builddir/src/liberfa.dylib'
+      artifact: macLiberfa
