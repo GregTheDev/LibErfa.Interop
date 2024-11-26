@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netstandard2.1;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0</TargetFrameworks>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>disable</Nullable>
 		<Title>LibErfa.Interop</Title>
 		<Authors>Greg Nagel</Authors>
 		<PackageTags>liberfa;AstroNET;sofa;erfa</PackageTags>
 		<Description>Unoffical .NET wrapper for the liberfa library (https://github.com/liberfa/erfa). Limited functions are available initially. To request more simply log an issue.</Description>
-		<Version>1.0.0-alpha.11</Version>
+		<Version>1.0.1</Version>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<PackageProjectUrl>https://github.com/GregTheDev/LibErfa.Interop</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/GregTheDev/LibErfa.Interop</RepositoryUrl>
-		<PackageReleaseNotes>First release.</PackageReleaseNotes>
+		<PackageReleaseNotes>Added support for .NET 9.</PackageReleaseNotes>
 		<Copyright>Copyright (c) Gregory Nagel 2024.</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<AnalysisLevel>latest-recommended</AnalysisLevel>
